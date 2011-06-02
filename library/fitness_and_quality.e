@@ -1,4 +1,4 @@
-note
+﻿note
 	description: "Summary description for {FITNESS_AND_QUALITY}."
 	author: ""
 	date: "$Date$"
@@ -18,6 +18,9 @@ feature -- Initialization
 		do
 			fitness := a_fitness
 			quality := a_quality
+		ensure
+			fitness_assigned : fitness = a_fitness
+			quality_assigned : quality = a_quality
 		end
 
 feature -- Access
@@ -28,10 +31,11 @@ feature -- Access
 
 feature -- Element Change
 	set_mime_type (a_mime_type : STRING)
+		-- set mime_type with `a_mime_type'
 		do
 			mime_type := a_mime_type
 		ensure
-			mime_type_assigned : mime_type ~ a_mime_type
+			mime_type_assigned : mime_type.same_string (a_mime_type)
 		end
 
 feature -- Comparision
@@ -39,11 +43,11 @@ feature -- Comparision
 	is_less alias "<" (other: like Current): BOOLEAN
 			-- Is current object less than `other'?
 		do
-			if Current.fitness = other.fitness then
-				if Current.quality.is_equal (other.quality) then
+			if fitness = other.fitness then
+				if quality.is_equal (other.quality) then
 					Result := false;
 				else
-					Result := Current.quality < other.quality
+					Result := quality < other.quality
 				end
 			else
 			   Result := Current.fitness < other.fitness

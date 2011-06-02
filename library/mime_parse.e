@@ -186,6 +186,7 @@ feature -- Parser
 
 
 	best_match (supported : LIST[STRING]; header : STRING) : STRING
+		-- Choose the mime-type with the highest fitness score and quality ('q') from a list of candidates.
 		local
 			l_parsed_result : LIST[PARSE_RESULTS]
 			weighted_matches : SORTED_TWO_WAY_LIST[FITNESS_AND_QUALITY]
