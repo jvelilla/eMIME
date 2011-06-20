@@ -61,13 +61,13 @@ feature -- Parser
 		-- in the params dictionary, filling it in with a proper default if
 		-- necessary.
 		local
-			q : STRING
+			q : detachable STRING
 			r : REAL_64
 		do
 		 	fixme ("Improve the code!!!")
 		 	Result := parse_mime_type (a_range)
 		 	q := Result.item ("q")
-		 	if q /= Void and (not q.is_empty) and q.is_double then
+		 	if q /= Void and then (not q.is_empty) and then q.is_double then
 		 		r := q.to_double
 		 	else
 		 		r := 1
@@ -92,8 +92,10 @@ feature -- Parser
 			range : PARSE_RESULTS
 			keys : LIST [STRING]
 			param_matches : INTEGER
-			element : STRING
+			element : detachable STRING
 			l_fitness : INTEGER
+			t_item : detachable STRING
+			r_item : detachable STRING
 		do
 			best_fitness := -1
 			best_fit_q := 0
@@ -116,8 +118,10 @@ feature -- Parser
 					loop
 						param_matches := 0
 						element := keys.item_for_iteration
-						if  not element.is_equal ("q") and range.has_key (element) and
-							target.item (element).is_equal (range.item (element))
+						t_item := target.item (element)
+						r_item := range.item (element)
+						if  not element.is_equal ("q") and then range.has_key (element) and then
+							t_item /= Void and then r_item /= Void and then t_item.same_string (r_item)
 						then
 							param_matches := param_matches + 1
 						end
@@ -136,8 +140,8 @@ feature -- Parser
 						if l_fitness > best_fitness then
 							best_fitness := l_fitness
 							element := range.item ("q")
-							if element /= Void or else (not element.is_empty) then
-								best_fit_q := element.to_double
+							if attached element as elem then
+								best_fit_q := elem.to_double
 							else
 								best_fit_q := 0
 							end
@@ -191,7 +195,6 @@ feature -- Parser
 			l_parsed_result : LIST[PARSE_RESULTS]
 			weighted_matches : SORTED_TWO_WAY_LIST[FITNESS_AND_QUALITY]
 			l_res : LIST[STRING]
-			element : STRING
 			p_res : PARSE_RESULTS
 			fitness_and_quality,first_one : FITNESS_AND_QUALITY
 
@@ -226,8 +229,12 @@ feature -- Parser
 			weighted_matches.sort
 
 			first_one := weighted_matches.last
-			if not first_one.quality.is_equal (0) then
-				Result := first_one.mime_type
+			if attached first_one as first then
+				if not first_one.quality.is_equal (0) then
+					Result := first_one.mime_type
+				else
+					Result := ""
+				end
 			else
 				Result := ""
 			end
@@ -236,7 +243,9 @@ feature -- Parser
 
 feature {NONE} -- Implementation
 	trim ( a_string : STRING) : STRING
-		-- trim whitespace from the beginning and end of a string
+		-- trim whitespace from the beginning and end of a stringo
+		require
+			valid_argument : a_string /= Void
 		do
 			a_string.left_adjust
 			a_string.right_justify

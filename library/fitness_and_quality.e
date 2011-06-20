@@ -18,6 +18,7 @@ feature -- Initialization
 		do
 			fitness := a_fitness
 			quality := a_quality
+			mime_type := ""
 		ensure
 			fitness_assigned : fitness = a_fitness
 			quality_assigned : quality = a_quality
