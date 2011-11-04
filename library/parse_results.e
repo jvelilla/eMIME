@@ -12,6 +12,12 @@ inherit
 		redefine
 			out
 		end
+
+	DEBUG_OUTPUT
+		redefine
+			out
+		end
+
 create
 	make
 
@@ -19,7 +25,7 @@ feature -- Initialization
 
 	make
 		do
-			create params.make (10)
+			create params.make (2)
 		end
 
 feature -- Access
@@ -76,7 +82,7 @@ feature -- Element change
 			if params.has_key (key) then
 				params.replace (new, key)
 			else
-				params.put (new, key)
+				params.force (new, key)
 			end
 		ensure
 			has_key: params.has_key (key)
@@ -108,6 +114,11 @@ feature -- Status Report
 			Result.append ("})")
 		end
 
+	debug_output: STRING
+			-- String that should be displayed in debugger to represent `Current'.
+		do
+			Result := out
+		end
 
 feature {NONE} -- Implementation
 

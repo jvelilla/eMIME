@@ -59,21 +59,21 @@ feature -- Parser
 			-- In addition this function also guarantees that there is a value for 'q'
 			-- in the params dictionary, filling it in with a proper default if
 			-- necessary.
-		local
-			q : detachable STRING
-			r : REAL_64
 		do
 			fixme ("Improve the code!!!")
 			Result := parse_mime_type (a_range)
-			q := Result.item ("q")
-			if q /= Void and then (not q.is_empty) and then q.is_double then
-				r := q.to_double
+			if attached Result.item ("q") as q then
+				if
+					q.is_double and then
+					attached {REAL_64} q.to_double as r and then
+					(r >= 0.0 and r <= 1.0)
+				then
+					--| Keep current value
+				else
+					Result.put ("1.0", "q")
+				end
 			else
-				r := 1
-			end
-
-			if q = Void or else q.is_empty or else r < 0 or else r > 1 then
-				Result.put ("1", "q")
+				Result.put ("1.0", "q")
 			end
 		end
 
@@ -86,6 +86,7 @@ feature -- Parser
 			-- quality_parsed(), 'parsed_ranges' must be a list of parsed media ranges.
 		local
 			best_fitness: INTEGER
+			target_q: REAL_64
 			best_fit_q: REAL_64
 			target: PARSE_RESULTS
 			range: PARSE_RESULTS
@@ -93,16 +94,25 @@ feature -- Parser
 			param_matches: INTEGER
 			element: detachable STRING
 			l_fitness: INTEGER
-			t_item: detachable STRING
-			r_item: detachable STRING
-			l_target_type, l_target_sub_type: detachable STRING
 		do
 			best_fitness := -1
-			best_fit_q := 0
+			best_fit_q := 0.0
 			target := parse_media_range (a_mime_type)
-			l_target_type := target.type
-			l_target_sub_type := target.sub_type
-			if l_target_type /= Void and l_target_sub_type /= Void then
+			if attached target.item ("q") as q and then q.is_double then
+				target_q := q.to_double
+				if target_q < 0.0 then
+					target_q := 0.0
+				elseif target_q > 1.0 then
+					target_q := 1.0
+				end
+			else
+				target_q := 1.0
+			end
+
+			if
+				attached target.type as l_target_type and
+				attached target.sub_type as l_target_sub_type
+			then
 				from
 					parsed_ranges.start
 				until
@@ -110,11 +120,12 @@ feature -- Parser
 				loop
 					range := parsed_ranges.item_for_iteration
 					if
-						(attached range.type as l_range_type and then
+						(
+							attached range.type as l_range_type and then
 							(l_target_type.same_string (l_range_type) or l_range_type.same_string ("*") or l_target_type.same_string ("*"))
-						)
-							and
-						(attached range.sub_type as l_range_sub_type and then
+						) and
+						(
+							attached range.sub_type as l_range_sub_type and then
 							(l_target_sub_type.same_string (l_range_sub_type) or l_range_sub_type.same_string ("*") or l_target_sub_type.same_string ("*"))
 						)
 					then
@@ -126,11 +137,11 @@ feature -- Parser
 							keys.after
 						loop
 							element := keys.item_for_iteration
-							t_item := target.item (element)
-							r_item := range.item (element)
 							if
-								not element.is_equal ("q") and then range.has_key (element) and then
-								t_item /= Void and then r_item /= Void and then t_item.same_string (r_item)
+								not element.same_string ("q") and then
+								range.has_key (element) and then
+								(attached target.item (element) as t_item and attached range.item (element) as r_item) and then
+								t_item.same_string (r_item)
 							then
 								param_matches := param_matches + 1
 							end
@@ -152,10 +163,10 @@ feature -- Parser
 						if l_fitness > best_fitness then
 							best_fitness := l_fitness
 							element := range.item ("q")
-							if attached element as elem then
-								best_fit_q := elem.to_double
+							if element /= Void then
+								best_fit_q := element.to_double.min (target_q)
 							else
-								best_fit_q := 0
+								best_fit_q := 0.0
 							end
 						end
 					end
@@ -164,7 +175,6 @@ feature -- Parser
 			end
 			create Result.make (best_fitness, best_fit_q)
 		end
-
 
 	quality_parsed (a_mime_type: STRING; parsed_ranges: LIST [PARSE_RESULTS]): REAL_64
 			--	Find the best match for a given mime-type against a list of ranges that
@@ -175,7 +185,6 @@ feature -- Parser
 		do
 			Result := fitness_and_quality_parsed (a_mime_type, parsed_ranges).quality
 		end
-
 
 	quality (a_mime_type: STRING; ranges: STRING): REAL_64
 			-- Returns the quality 'q' of a mime-type when compared against the
@@ -199,7 +208,6 @@ feature -- Parser
 			Result := quality_parsed (a_mime_type, res)
 		end
 
-
 	best_match (supported: LIST [STRING]; header: STRING): STRING
 			-- Choose the mime-type with the highest fitness score and quality ('q') from a list of candidates.
 		local
@@ -211,10 +219,8 @@ feature -- Parser
 			i : INTEGER
 
 		do
-			create {LINKED_LIST [PARSE_RESULTS]} l_parsed_result.make
-			create {LINKED_LIST  [FITNESS_AND_QUALITY]} weighted_matches.make
-
 			l_res := header.split (',')
+			create {ARRAYED_LIST [PARSE_RESULTS]} l_parsed_result.make (l_res.count)
 
 			fixme("Extract method!!!")
 			from
@@ -222,10 +228,12 @@ feature -- Parser
 			until
 				l_res.after
 			loop
-				p_res := parse_media_range(l_res.item_for_iteration)
+				p_res := parse_media_range (l_res.item_for_iteration)
 				l_parsed_result.force (p_res)
 				l_res.forth
 			end
+
+			create {ARRAYED_LIST [FITNESS_AND_QUALITY]} weighted_matches.make (supported.count)
 
 			from
 				supported.start
@@ -242,25 +250,21 @@ feature -- Parser
 			fixme ("Try to use an external sorter")
 			from
 				weighted_matches.start
-				first_one:= weighted_matches.item_for_iteration
+				first_one := weighted_matches.item_for_iteration
 				weighted_matches.forth
 			until
 				weighted_matches.after
 			loop
 				i := first_one.three_way_comparison (weighted_matches.item_for_iteration)
-				if i <= 0 then
+				if i < 0 then
 					first_one := weighted_matches.item_for_iteration
 				end
 				weighted_matches.forth
 			end
 
 
-			if attached first_one as first then
-				if not first_one.quality.is_equal (0) then
-					Result := first_one.mime_type
-				else
-					Result := ""
-				end
+			if first_one /= Void and then first_one.quality /= 0.0 then
+				Result := first_one.mime_type
 			else
 				Result := ""
 			end
@@ -269,13 +273,15 @@ feature -- Parser
 feature {NONE} -- Implementation
 
 	trim (a_string: STRING): STRING
-			-- trim whitespace from the beginning and end of a stringo
+			-- trim whitespace from the beginning and end of a string
 		require
 			valid_argument : a_string /= Void
 		do
 			a_string.left_adjust
 			a_string.right_justify
 			Result := a_string
+		ensure
+			result_same_as_argument: a_string = Result
 		end
 
 end
