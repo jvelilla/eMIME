@@ -215,16 +215,15 @@ feature -- Parser
 	best_match (supported: LIST [STRING]; header: STRING): STRING
 			-- Choose the mime-type with the highest fitness score and quality ('q') from a list of candidates.
 		local
-			l_parsed_result: LIST [PARSE_RESULTS]
+			l_header_results: LIST [PARSE_RESULTS]
 			weighted_matches: LIST [FITNESS_AND_QUALITY]
 			l_res: LIST [STRING]
 			p_res: PARSE_RESULTS
-			fitness_and_quality, first_one: FITNESS_AND_QUALITY
-			i : INTEGER
-
+			fitness_and_quality, first_one: detachable FITNESS_AND_QUALITY
+			s: STRING
 		do
 			l_res := header.split (',')
-			create {ARRAYED_LIST [PARSE_RESULTS]} l_parsed_result.make (l_res.count)
+			create {ARRAYED_LIST [PARSE_RESULTS]} l_header_results.make (l_res.count)
 
 			fixme("Extract method!!!")
 			from
@@ -233,7 +232,7 @@ feature -- Parser
 				l_res.after
 			loop
 				p_res := parse_media_range (l_res.item_for_iteration)
-				l_parsed_result.force (p_res)
+				l_header_results.force (p_res)
 				l_res.forth
 			end
 
@@ -244,37 +243,93 @@ feature -- Parser
 			until
 				supported.after
 			loop
-				fitness_and_quality := fitness_and_quality_parsed(supported.item_for_iteration,l_parsed_result);
-				fitness_and_quality.set_mime_type (supported.item_for_iteration)
+				fitness_and_quality := fitness_and_quality_parsed (supported.item_for_iteration, l_header_results)
+				fitness_and_quality.set_mime_type (mime_type (supported.item_for_iteration))
 				weighted_matches.force (fitness_and_quality)
 				supported.forth
 			end
 
-
-			fixme ("Try to use an external sorter")
+				--| Keep only top quality+fitness types
 			from
 				weighted_matches.start
-				first_one := weighted_matches.item_for_iteration
+				first_one := weighted_matches.item
 				weighted_matches.forth
 			until
 				weighted_matches.after
 			loop
-				i := first_one.three_way_comparison (weighted_matches.item_for_iteration)
-				if i < 0 then
-					first_one := weighted_matches.item_for_iteration
+				fitness_and_quality := weighted_matches.item
+				if first_one < fitness_and_quality then
+					first_one := fitness_and_quality
+					if not weighted_matches.isfirst then
+						from
+							weighted_matches.back
+						until
+							weighted_matches.before
+						loop
+							weighted_matches.remove
+							weighted_matches.back
+						end
+						weighted_matches.forth
+					end
+					check weighted_matches.item = fitness_and_quality end
+					weighted_matches.forth
+				elseif first_one.is_equal (fitness_and_quality) then
+					weighted_matches.forth
+				else
+					check first_one > fitness_and_quality end
+					weighted_matches.remove
 				end
-				weighted_matches.forth
 			end
-
-
 			if first_one /= Void and then first_one.quality /= 0.0 then
-				Result := first_one.mime_type
+				if weighted_matches.count = 1 then
+					Result := first_one.mime_type
+				else
+					from
+						fitness_and_quality := Void
+						l_header_results.start
+					until
+						l_header_results.after or fitness_and_quality /= Void
+					loop
+						s := l_header_results.item.mime_type
+						from
+							weighted_matches.start
+						until
+							weighted_matches.after or fitness_and_quality /= Void
+						loop
+							fitness_and_quality := weighted_matches.item
+							if fitness_and_quality.mime_type.same_string (s) then
+								--| Found
+							else
+								fitness_and_quality := Void
+								weighted_matches.forth
+							end
+						end
+						l_header_results.forth
+					end
+					if fitness_and_quality /= Void then
+						Result := fitness_and_quality.mime_type
+					else
+						Result := first_one.mime_type
+					end
+				end
 			else
 				Result := ""
 			end
 		end
 
 feature {NONE} -- Implementation
+
+	mime_type (s: STRING): STRING
+		local
+			p: INTEGER
+		do
+			p := s.index_of (';', 1)
+			if p > 0 then
+				Result := trim (s.substring (1, p - 1))
+			else
+				Result := trim (s.string)
+			end
+		end
 
 	trim (a_string: STRING): STRING
 			-- trim whitespace from the beginning and end of a string

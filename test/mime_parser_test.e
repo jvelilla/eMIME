@@ -56,7 +56,7 @@ feature -- Test routines
 
 	test_best_match
 		local
-			mime_types_supported : LIST[STRING]
+			mime_types_supported : LIST [STRING]
 			l_types : STRING
 		do
 			l_types := "application/xbel+xml,application/xml"
@@ -87,7 +87,7 @@ feature -- Test routines
 
 			l_types := "application/atom+xml;q=1.0,application/xml,text/html"
 			mime_types_supported := l_types.split(',')
-			assert ("Match first top quality and fitness", parser.best_match (mime_types_supported, "text/html;q=1.0,*/*;q=0.1,application/xml").same_string ("application/xml"))
+			assert ("Match first top quality and fitness", parser.best_match (mime_types_supported, "text/html;q=1.0,*/*;q=0.1,application/xml").same_string ("text/html"))
 
 			l_types := "application/atom+xml;q=1.0,application/xml,text/html"
 			mime_types_supported := l_types.split(',')

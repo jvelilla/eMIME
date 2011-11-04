@@ -47,8 +47,10 @@ feature -- Status report
 			-- String that should be displayed in debugger to represent `Current'.
 		do
 			create Result.make_from_string (mime_type)
-			Result.append (";q=" + quality.out)
-			Result.append (";fitness=" + fitness.out)
+			Result.append (" (")
+			Result.append ("quality=" + quality.out)
+			Result.append (" ; fitness=" + fitness.out)
+			Result.append (" )")
 		end
 
 feature -- Element Change
