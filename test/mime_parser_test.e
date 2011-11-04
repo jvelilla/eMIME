@@ -45,8 +45,8 @@ feature -- Test routines
 		do
 			accept := "text/*;q=0.3, text/html;q=0.7, text/html;level=1, text/html;level=2;q=0.4, */*;q=0.5";
 			assert ("Expected 1.0", 1.0 = parser.quality ("text/html;level=1", accept))
-			assert ("Expected 0.7", 0.7 = parser.quality ("text/html", accept))
 			assert ("Expected 0.3", 0.3 = parser.quality ("text/plain", accept))
+			assert ("Expected 0.7", 0.7 = parser.quality ("text/html", accept))
 			assert ("Expected 0.5", 0.5 = parser.quality ("image/jpeg", accept))
 			assert ("Expected 0.4", 0.4 = parser.quality ("text/html;level=2", accept))
 			assert ("Expected 0.7", 0.7 = parser.quality ("text/html;level=3", accept))
@@ -63,8 +63,8 @@ feature -- Test routines
 			assert ("Expected application/xbel+xml",parser.best_match (mime_types_supported, "application/xbel+xml").same_string( "application/xbel+xml"))
 			assert ("Direct match with a q parameter",parser.best_match (mime_types_supported, "application/xbel+xml;q=1").same_string("application/xbel+xml"))
 			assert ("Direct match second choice with a q parameter",parser.best_match (mime_types_supported, "application/xml;q=1").same_string("application/xml"))
---			assert ("Direct match using a subtype wildcard",parser.best_match (mime_types_supported, "application/*;q=1").same_string("application/xml"))
---			assert ("Match using a type wildcard",parser.best_match (mime_types_supported, "*/*").same_string("application/xml"))
+			assert ("Direct match using a subtype wildcard",parser.best_match (mime_types_supported, "application/*;q=1").is_equal("application/xml"))
+			assert ("Match using a type wildcard",parser.best_match (mime_types_supported, "*/*").same_string("application/xml"))
 
 			l_types := "application/xbel+xml,text/xml"
 			mime_types_supported := l_types.split(',')
@@ -75,6 +75,12 @@ feature -- Test routines
 			mime_types_supported := l_types.split(',')
 			assert ("Common Ajax scenario",parser.best_match (mime_types_supported, "application/json,text/javascript, */*").same_string ("application/json"))
 			assert ("Common Ajax scenario,verify fitness ordering",parser.best_match (mime_types_supported, "application/json,text/javascript, */*").same_string("application/json"))
+
+			l_types := "application/atom+xml;q=1.0,application/xml;q=0.6,text/html"
+--			l_types := "text/html,application/atom+xml;q=1.0,application/xml;q=0.6"
+--			this order change the expected results
+			mime_types_supported := l_types.split(',')
+			assert ("Rest test",parser.best_match (mime_types_supported, "text/html;q=1.0,*/*; q=0.1,application/xml").same_string("text/html"))
 
 		end
 

@@ -119,12 +119,12 @@ feature -- Parser
 						)
 					then
 						from
+							param_matches := 0
 							keys := target.keys
 							keys.start
 						until
 							keys.after
 						loop
-							param_matches := 0
 							element := keys.item_for_iteration
 							t_item := target.item (element)
 							r_item := range.item (element)
@@ -134,28 +134,29 @@ feature -- Parser
 							then
 								param_matches := param_matches + 1
 							end
-
-							if l_range_type.same_string (l_target_type) then
-								l_fitness := 100
-							else
-								l_fitness := 0
-							end
-
-							if l_range_sub_type.same_string (l_target_sub_type) then
-								l_fitness := l_fitness + 10
-							end
-							l_fitness := l_fitness + param_matches
-
-							if l_fitness > best_fitness then
-								best_fitness := l_fitness
-								element := range.item ("q")
-								if attached element as elem then
-									best_fit_q := elem.to_double
-								else
-									best_fit_q := 0
-								end
-							end
 							keys.forth
+						end
+
+						if l_range_type.same_string (l_target_type) then
+							l_fitness := 100
+						else
+							l_fitness := 0
+						end
+
+						if l_range_sub_type.same_string (l_target_sub_type) then
+							l_fitness := l_fitness + 10
+						end
+
+						l_fitness := l_fitness + param_matches
+
+						if l_fitness > best_fitness then
+							best_fitness := l_fitness
+							element := range.item ("q")
+							if attached element as elem then
+								best_fit_q := elem.to_double
+							else
+								best_fit_q := 0
+							end
 						end
 					end
 					parsed_ranges.forth
@@ -203,14 +204,15 @@ feature -- Parser
 			-- Choose the mime-type with the highest fitness score and quality ('q') from a list of candidates.
 		local
 			l_parsed_result: LIST [PARSE_RESULTS]
-			weighted_matches: SORTED_TWO_WAY_LIST [FITNESS_AND_QUALITY]
+			weighted_matches: LIST [FITNESS_AND_QUALITY]
 			l_res: LIST [STRING]
 			p_res: PARSE_RESULTS
 			fitness_and_quality, first_one: FITNESS_AND_QUALITY
+			i : INTEGER
 
 		do
 			create {LINKED_LIST [PARSE_RESULTS]} l_parsed_result.make
-			create {SORTED_TWO_WAY_LIST [FITNESS_AND_QUALITY]} weighted_matches.make
+			create {LINKED_LIST  [FITNESS_AND_QUALITY]} weighted_matches.make
 
 			l_res := header.split (',')
 
@@ -232,13 +234,27 @@ feature -- Parser
 			loop
 				fitness_and_quality := fitness_and_quality_parsed(supported.item_for_iteration,l_parsed_result);
 				fitness_and_quality.set_mime_type (supported.item_for_iteration)
-				weighted_matches.extend (fitness_and_quality)
+				weighted_matches.force (fitness_and_quality)
 				supported.forth
 			end
 
-			weighted_matches.sort
 
-			first_one := weighted_matches.last
+			fixme ("Try to use an external sorter")
+			from
+				weighted_matches.start
+				first_one:= weighted_matches.item_for_iteration
+				weighted_matches.forth
+			until
+				weighted_matches.after
+			loop
+				i := first_one.three_way_comparison (weighted_matches.item_for_iteration)
+				if i <= 0 then
+					first_one := weighted_matches.item_for_iteration
+				end
+				weighted_matches.forth
+			end
+
+
 			if attached first_one as first then
 				if not first_one.quality.is_equal (0) then
 					Result := first_one.mime_type
