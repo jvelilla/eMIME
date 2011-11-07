@@ -10,6 +10,11 @@ class
 inherit
 	COMPARABLE
 
+	DEBUG_OUTPUT
+		undefine
+			is_equal
+		end
+
 create
 	make
 
@@ -35,6 +40,19 @@ feature -- Access
 			-- optionally used
 			-- empty by default
 
+
+feature -- Status report
+
+	debug_output: STRING
+			-- String that should be displayed in debugger to represent `Current'.
+		do
+			create Result.make_from_string (mime_type)
+			Result.append (" (")
+			Result.append ("quality=" + quality.out)
+			Result.append (" ; fitness=" + fitness.out)
+			Result.append (" )")
+		end
+
 feature -- Element Change
 
 	set_mime_type (a_mime_type: STRING)
@@ -51,11 +69,7 @@ feature -- Comparision
 			-- Is current object less than `other'?
 		do
 			if fitness = other.fitness then
-				if quality.is_equal (other.quality) then
-					Result := False
-				else
-					Result := quality < other.quality
-				end
+				Result := quality < other.quality
 			else
 			   Result := fitness < other.fitness
 			end

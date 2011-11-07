@@ -12,6 +12,12 @@ inherit
 		redefine
 			out
 		end
+
+	DEBUG_OUTPUT
+		redefine
+			out
+		end
+
 create
 	make
 
@@ -19,7 +25,8 @@ feature -- Initialization
 
 	make
 		do
-			create params.make (10)
+			create params.make (2)
+			create mime_type.make_from_string ("*/*")
 		end
 
 feature -- Access
@@ -27,6 +34,8 @@ feature -- Access
 	type: detachable STRING
 
 	sub_type: detachable STRING
+
+	mime_type: STRING
 
 	item (a_key: STRING): detachable STRING
 			-- Item associated with `a_key', if present
@@ -56,6 +65,11 @@ feature -- Element change
 			-- Set type with `a_type'	
 		do
 			type := a_type
+			if attached sub_type as st then
+				mime_type := a_type + "/" + st
+			else
+				mime_type := a_type + "/*"
+			end
 		ensure
 			type_assigned: type ~ a_type
 		end
@@ -64,6 +78,11 @@ feature -- Element change
 			-- Set sub_type with `a_sub_type	
 		do
 			sub_type := a_sub_type
+			if attached type as t then
+				mime_type := t + "/" + a_sub_type
+			else
+				mime_type := "*/" + a_sub_type
+			end
 		ensure
 			sub_type_assigned: sub_type ~ a_sub_type
 		end
@@ -76,7 +95,7 @@ feature -- Element change
 			if params.has_key (key) then
 				params.replace (new, key)
 			else
-				params.put (new, key)
+				params.force (new, key)
 			end
 		ensure
 			has_key: params.has_key (key)
@@ -108,6 +127,11 @@ feature -- Status Report
 			Result.append ("})")
 		end
 
+	debug_output: STRING
+			-- String that should be displayed in debugger to represent `Current'.
+		do
+			Result := out
+		end
 
 feature {NONE} -- Implementation
 
