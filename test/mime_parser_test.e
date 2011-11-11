@@ -101,6 +101,10 @@ feature -- Test routines
 			mime_types_supported := l_types.split(',')
 			assert ("Test 2", parser.best_match (mime_types_supported, "application/xml,text/html,*/*;q=0.1").same_string ("application/xml"))
 
+			l_types := "text/html,application/xml;q=0.6"
+			mime_types_supported := l_types.split(',')
+			assert ("Test 2", parser.best_match (mime_types_supported, "application/atom+xml;q=1.0, application/xml;q=0.6, text/html").same_string ("text/html"))
+
 		end
 
 

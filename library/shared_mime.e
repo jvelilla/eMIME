@@ -14,4 +14,17 @@ feature
 			create Result
 		end
 
+	common: COMMON_ACCEPT_HEADER_PARSER
+		-- Charset and Encoding
+		once
+			create Result
+		end
+
+	language: LANGUAGE_PARSE
+		once
+			create Result
+		end
+
+
+
 end
