@@ -1,6 +1,5 @@
 ﻿note
 	description: "Summary description for {SHARED_MIME}."
-	author: ""
 	date: "$Date$"
 	revision: "$Revision$"
 
@@ -25,6 +24,7 @@ feature
 			create Result
 		end
 
-
-
+note
+	copyright: "2011-2011, Javier Velilla, Jocelyn Fiat and others"
+	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 end
