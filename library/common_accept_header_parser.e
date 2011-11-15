@@ -146,7 +146,6 @@ feature -- Parser
 			l_res: LIST [STRING]
 			p_res: COMMON_RESULTS
 			fitness_and_quality, first_one: detachable FITNESS_AND_QUALITY
-			s: STRING
 		do
 			l_res := header.split (',')
 			create {ARRAYED_LIST [COMMON_RESULTS]} l_header_results.make (l_res.count)
@@ -217,19 +216,22 @@ feature -- Parser
 					until
 						l_header_results.after or fitness_and_quality /= Void
 					loop
-						s := l_header_results.item.field
-						from
-							weighted_matches.start
-						until
-							weighted_matches.after or fitness_and_quality /= Void
-						loop
-							fitness_and_quality := weighted_matches.item
-							if fitness_and_quality.mime_type.same_string (s) then
-								--| Found
-							else
-								fitness_and_quality := Void
-								weighted_matches.forth
+						if attached l_header_results.item.field as l_field then
+							from
+								weighted_matches.start
+							until
+								weighted_matches.after or fitness_and_quality /= Void
+							loop
+								fitness_and_quality := weighted_matches.item
+								if fitness_and_quality.mime_type.same_string (l_field) then
+									--| Found
+								else
+									fitness_and_quality := Void
+									weighted_matches.forth
+								end
 							end
+						else
+							check has_field: False end
 						end
 						l_header_results.forth
 					end

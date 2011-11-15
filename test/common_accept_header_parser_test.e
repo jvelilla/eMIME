@@ -1,11 +1,12 @@
 note
-	description: "Summary description for {COMMON_ACCPET_HEADER_PARSER_TEST}."
+	description: "Summary description for {COMMON_ACCEPT_HEADER_PARSER_TEST}."
 	author: ""
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	COMMON_ACCPET_HEADER_PARSER_TEST
+	COMMON_ACCEPT_HEADER_PARSER_TEST
+
 inherit
 	EQA_TEST_SET
 		redefine
@@ -50,9 +51,6 @@ feature -- Test routines
 			assert ("Expected iso-8859-5", parser.best_match (charset_supported, "*").same_string ("iso-8859-5"))
 			assert ("Expected unicode-1-1", parser.best_match (charset_supported, "unicode-1-1;q=1").same_string ("unicode-1-1"))
 		end
-
-
-
 
 	parser : COMMON_ACCEPT_HEADER_PARSER
 
